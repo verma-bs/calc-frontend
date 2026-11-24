@@ -104,17 +104,11 @@ export function useCalculator() {
 
   const backspace = useCallback(() => {
     setS((p) => {
-      const current = fromResult(p, resRef.current.result);
-      if (current.nums.length === current.ops.length) {
-        return { ...current, ops: current.ops.slice(0, -1) };
-      }
-      const value = current.nums[current.nums.length - 1].slice(0, -1);
-      if (value !== "" && value !== "-") {
-        return { ...current, nums: [...current.nums.slice(0, -1), value] };
-      }
-      return current.nums.length === 1
-        ? initial
-        : { ...current, nums: current.nums.slice(0, -1) };
+      if (p.justEvaluated) return initial;
+      if (p.nums.length === p.ops.length) return { ...p, ops: p.ops.slice(0, -1) };
+      const cur = p.nums[p.nums.length - 1].slice(0, -1);
+      if (cur !== "" && cur !== "-") return { ...p, nums: [...p.nums.slice(0, -1), cur] };
+      return p.nums.length === 1 ? initial : { ...p, nums: p.nums.slice(0, -1) };
     });
   }, []);
 

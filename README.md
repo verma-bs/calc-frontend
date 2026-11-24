@@ -24,7 +24,9 @@ Arithmetic is evaluated by the Go calculator service through `POST /api/v1/calcu
 ├── index.html                # Vite HTML entry point
 ├── package.json              # Scripts and direct dependencies
 ├── package-lock.json         # npm reproducible dependency lock
-├── vite.config.js            # Vite aliases, JSX handling, and environment define
+├── vite.config.js            # Vite aliases, JSX handling, and development API proxy
+├── Dockerfile                # Frontend build plus Nginx runtime image
+├── nginx.conf                # Static serving and /api reverse proxy configuration
 ├── public/
 │   └── .gitkeep              # Placeholder for public static assets
 ├── src/
@@ -415,13 +417,37 @@ This source map contains original source names and recoverable source content us
 Previously recorded verification confirms a `2 + 3 × 4 =` interaction returned `14`, theme changes were stored in local storage, and keyboard divide-by-zero showed `Cannot divide by 0`.
 
 
-##The following areas are current limitations:
+## The following areas are current limitations:
 
-- The Go backend must be running for calculations; Vite's API proxy is development-only.I have added Nginx configuration as well with frontend docker,But in real project Nginx will be separate component. 
+- The Go backend must be running for calculations; Vite's API proxy is development-only. Docker includes Nginx in the frontend container and routes `/api/` to the Go container; larger deployments may use Nginx or an ingress as a separate infrastructure component.
   
-- Styling uses plain CSS, This part can be improved.
+- Styling uses plain CSS, and more component-level CSS organization may be useful as the app grows.
 
 - Digits are limited to 15 characters, but no general expression-length limit exists for history.
 
 - The app has no explicit CSS dark mode media-query behavior; theme is state and local-storage driven.
+
+### Docker and Nginx
+
+The frontend Dockerfile is a multi-stage build:
+
+1. A Node 22 build stage installs locked dependencies and runs TypeScript checking plus `npm run build`.
+2. The generated `dist/` directory is copied into an Nginx runtime image.
+3. `nginx.conf` is copied into `/etc/nginx/conf.d/default.conf` and is used by Nginx at container startup.
+
+Nginx is included in the frontend container for this local Compose deployment. It serves the static Vite files and proxies browser requests whose URL starts with `/api/` to `calculator-api:8080` on the private Compose network:
+
+```nginx
+location /api/ {
+    proxy_pass http://calculator-api:8080;
+}
+
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+This keeps the browser-facing origin same-origin: frontend requests go to port `8088` and Nginx forwards `/api/` calls to the Go container. Vite's proxy is used only by `npm run dev`; Docker/Nginx does not depend on Vite at runtime.
+
+In a larger real-world deployment, Nginx or another ingress/load balancer is commonly moved into a separate infrastructure component. The included Nginx configuration remains useful for the local Docker deployment and as a reference for that reverse-proxy setup.
 
