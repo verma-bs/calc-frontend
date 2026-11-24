@@ -5,45 +5,65 @@
 
 > **Pull the images, start the shared Compose stack, and open the calculator in your browser.**
 
----
-Open Terminal 
-> mkdir test
-> cd test 
-> touch compose.yaml
-# Now edit compose.yaml and paste below content and save (:wq + Enter in Mac) Or Manually open file and pase content and save.
-> vi compose.yaml
-  services:
-      calculator-api:
-        image: bsverma/bhim_seezle:backend
-        environment:
-          HTTP_ADDR: ":8080"
-        restart: unless-stopped
+### 1. Open a terminal
 
-      frontend:
-        image: bsverma/bhim_seezle:frontend
-        depends_on:
-          - calculator-api
-        ports:
-          - "8088:80"
-        restart: unless-stopped 
-  
-  >pwd
-  /test
-  > docker compose pull 
-   [+] pull 6/6
-    ✔ Image bsverma/bhim_seezle:frontend     Pulled                                           4.2s
-    ✔ Image bsverma/bhim_seezle:backend  Pulled    
-  > docker compose up -d
-    [+] up 3/3
-    ✔ Network test_default            Created                                            0.0s
-    ✔ Container test-calculator-api-1 Started                                            0.2s
-    ✔ Container test-frontend-1       Started 
+```sh
+mkdir test
+cd test
+touch compose.yaml
+```
 
-  open http://localhost:8088   
+### 2. Add `compose.yaml`
 
-  Step-4 stop he shared deployment with 
-     docker compose down 
-    
+Open `compose.yaml` with a text editor, paste the following configuration, and save it:
+
+```yaml
+services:
+  calculator-api:
+    image: bsverma/bhim_seezle:backend
+    environment:
+      HTTP_ADDR: ":8080"
+    restart: unless-stopped
+
+  frontend:
+    image: bsverma/bhim_seezle:frontend
+    depends_on:
+      - calculator-api
+    ports:
+      - "8088:80"
+    restart: unless-stopped
+```
+
+Confirm the terminal is inside the directory containing `compose.yaml`:
+
+```sh
+pwd
+```
+
+### 3. Pull and start the images
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+Docker creates the shared network and starts both containers:
+
+```text
+Network test_default            Created
+Container test-calculator-api-1 Started
+Container test-frontend-1       Started
+```
+
+### 4. Open the calculator
+
+Open <http://localhost:8088>.
+
+### 5. Stop the shared deployment
+
+```sh
+docker compose down
+```
 
 ## 1. Overview
 
