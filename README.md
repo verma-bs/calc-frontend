@@ -91,13 +91,14 @@ Arithmetic is evaluated by the Go calculator service through `POST /api/v1/calcu
 ├── index.html                # Vite HTML entry point
 ├── package.json              # Scripts and direct dependencies
 ├── package-lock.json         # npm reproducible dependency lock
-├── vite.config.js            # Vite aliases, JSX handling, and development API proxy
+├── vite.config.js            # Vite aliases and development API proxy
+├── tsconfig.json             # Strict TypeScript configuration
 ├── Dockerfile                # Frontend build plus Nginx runtime image
 ├── nginx.conf                # Static serving and /api reverse proxy configuration
 ├── public/
 │   └── .gitkeep              # Placeholder for public static assets
 ├── src/
-│   ├── index.js              # Browser entry; mounts the React application
+│   ├── index.tsx             # Typed browser entry; mounts the React application
 │   ├── App.tsx               # App shell, theme state, and keyboard handling
 │   ├── App.css               # Calculator layout, themes, and component styles
 │   ├── index.css             # Global CSS reset and document defaults
@@ -172,19 +173,20 @@ npm run preview
 
 ## 5. Application Startup
 
-`index.html` provides a document with a `div#root` element and loads `/src/index.js` as an ES module.
+`index.html` provides a document with a `div#root` element and loads `/src/index.tsx` as an ES module.
 
-`src/index.js`:
+`src/index.tsx`:
 
 1. Imports React and `react-dom/client`.
 2. Imports the global CSS stylesheet.
 3. Imports `App`.
-4. Creates a React root and renders `App` inside strict mode.
+4. Checks that the root element exists.
+5. Creates a React root and renders `App` inside strict mode.
 
 ## 6. Component Architecture
 
 ```text
-index.js
+index.tsx
 └── App
   ├── ThemeToggle
   ├── Display
@@ -427,11 +429,10 @@ This stylesheet defines a small browser reset and document defaults using plain 
 Vite is configured to:
 
 - Alias `@` to `src/`
-- Replace `process.env.REACT_APP_BACKEND_URL` with `""`
-- Enable automatic JSX transformation
-- Add JSX transformation support for `src/index.js`
+- Proxy `/api` to the Go service during local development
+- Use automatic JSX transformation for TypeScript TSX files
 
-The pre-plugin named `calculator-entry-jsx` uses esbuild to transform `src/index.js` as JSX because that entry file is JavaScript rather than JSX. All project TSX files are handled by Vite/esbuild automatically.
+The browser entry is `/src/index.tsx`; Vite handles the TSX source with its standard esbuild pipeline.
 
 ## 14. Package Scripts and Dependencies
 
@@ -439,8 +440,10 @@ The pre-plugin named `calculator-entry-jsx` uses esbuild to transform `src/index
 |---|---|---|
 | `start` | `vite` | Start the development server |
 | `dev` | `vite` | Start the development server |
-| `build` | `vite build` | Produce a static build |
-| `preview` | `vite preview` | Serve the build locally |
+| `build` | `vite build` | Produce a static production build |
+| `preview` | `vite preview` | Serve the production build locally |
+| `typecheck` | `tsc --noEmit` | Type-check the TypeScript source |
+| `test` | `vitest run` | Run frontend unit tests |
 
 Direct runtime dependencies:
 
@@ -454,8 +457,9 @@ Direct development dependencies:
 - `@types/react`
 - `@types/react-dom`
 - `vite`
+- `vitest`
 
-The lockfile also includes transitive packages and their exact resolved versions.
+The lockfile includes transitive packages and their exact resolved versions.
 
 ## 15. Captured Preview Artifacts
 

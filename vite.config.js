@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { defineConfig, transformWithEsbuild } from "vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
@@ -10,13 +10,4 @@ export default defineConfig({
   },
   esbuild: { jsx: "automatic" },
   optimizeDeps: { esbuildOptions: { loader: { ".js": "jsx" } } },
-  plugins: [{
-    name: "calculator-entry-jsx",
-    enforce: "pre",
-    transform(code, id) {
-      if (id.endsWith("/src/index.js")) {
-        return transformWithEsbuild(code, id, { loader: "jsx", jsx: "automatic" });
-      }
-    }
-  }]
 });
