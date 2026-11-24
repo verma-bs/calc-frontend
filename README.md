@@ -1,8 +1,53 @@
-# TS Calculator
+# Calculator
+
+
+## 🚀 Quick Setup: Run the Calculator from Docker Hub
+
+> **Pull the images, start the shared Compose stack, and open the calculator in your browser.**
+
+---
+Open Terminal 
+> mkdir test
+> cd test 
+> touch compose.yaml
+# Now edit compose.yaml and paste below content and save (:wq + Enter in Mac) Or Manually open file and pase content and save.
+> vi compose.yaml
+  services:
+      calculator-api:
+        image: bsverma/bhim_seezle:backend
+        environment:
+          HTTP_ADDR: ":8080"
+        restart: unless-stopped
+
+      frontend:
+        image: bsverma/bhim_seezle:frontend
+        depends_on:
+          - calculator-api
+        ports:
+          - "8088:80"
+        restart: unless-stopped 
+  
+  >pwd
+  /test
+  > docker compose pull 
+   [+] pull 6/6
+    ✔ Image bsverma/bhim_seezle:frontend     Pulled                                           4.2s
+    ✔ Image bsverma/bhim_seezle:backend  Pulled    
+  > docker compose up -d
+    [+] up 3/3
+    ✔ Network test_default            Created                                            0.0s
+    ✔ Container test-calculator-api-1 Started                                            0.2s
+    ✔ Container test-frontend-1       Started 
+
+  open http://localhost:8088   
+
+  Step-4 stop he shared deployment with 
+     docker compose down 
+    
 
 ## 1. Overview
 
-TS Calculator is a browser-based calculator interface recreated as a local Vite/React project. It provides a responsive dark/light calculator UI, mouse and keyboard input, arithmetic with operator precedence, exponentiation, percentages, decimal editing, backspace, clear, divide-by-zero handling, and persistent theme selection.
+ Calculator is a browser-based calculator interface recreated as a local Vite/React project. It provides a responsive dark/light calculator UI, mouse and keyboard input, arithmetic with operator precedence, exponentiation, percentages, decimal editing, backspace, clear, divide-by-zero handling, and persistent theme selection.
 
 Arithmetic is evaluated by the Go calculator service through `POST /api/v1/calculate`. During development, Vite proxies `/api` requests to `http://127.0.0.1:8080`; start the Go service before using the calculator. The `capture/` directory contains artifacts from the original hosted preview and is not part of the Vite application entry point.
 
@@ -451,3 +496,36 @@ This keeps the browser-facing origin same-origin: frontend requests go to port `
 
 In a larger real-world deployment, Nginx or another ingress/load balancer is commonly moved into a separate infrastructure component. The included Nginx configuration remains useful for the local Docker deployment and as a reference for that reverse-proxy setup.
 
+## Docker image
+
+A standalone Docker image is provided by `Dockerfile`. It uses a multi-stage build:
+
+1. The build stage uses Node 22 and runs locked dependency installation, TypeScript checking, and `npm run build`.
+2. The generated `dist/` directory is copied into an Nginx runtime image.
+3. `nginx.conf` serves the static application and proxies `/api/` requests to `calculator-api:8080`.
+
+Build the frontend image from this directory:
+
+```sh
+docker build -t calc-frontend:local .
+```
+
+Run it on port `8088`:
+
+```sh
+docker run --rm -p 8088:80 --name calc-frontend calc-frontend:local
+```
+
+For API calls to work outside Docker Compose, the frontend container must be able to resolve a host or service named `calculator-api`. The easiest complete local setup is to use the workspace `compose.yaml`, which connects both containers to the same network:
+
+```sh
+docker compose -f ../compose.yaml up -d --build
+```
+
+Open <http://localhost:8088>. Test the browser-facing API route:
+
+```sh
+curl -i http://localhost:8088/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"expression":"27.02+20"}'
+```
