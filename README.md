@@ -65,6 +65,8 @@ Open <http://localhost:8088>.
 docker compose down
 ```
 
+---
+
 ## 1. Overview
 
  Calculator is a browser-based calculator interface recreated as a local Vite/React project. It provides a responsive dark/light calculator UI, mouse and keyboard input, arithmetic with operator precedence, exponentiation, percentages, decimal editing, backspace, clear, divide-by-zero handling, and persistent theme selection.
@@ -549,3 +551,51 @@ curl -i http://localhost:8088/api/v1/calculate \
   -H 'Content-Type: application/json' \
   -d '{"expression":"27.02+20"}'
 ```
+
+## API examples
+
+The browser sends a JSON infix-expression payload to the same-origin endpoint:
+
+```sh
+curl -i http://localhost:8088/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"expression":"27.02+20"}'
+```
+
+During local Vite development, the frontend uses the Nginx-like same-origin path `/api/v1/calculate`; `vite.config.js` proxies it to `http://127.0.0.1:8080`. In Docker, Nginx performs the `/api/` proxy instead.
+
+Successful result:
+
+```json
+{"result":47.02}
+```
+
+Invalid trailing operator:
+
+```sh
+curl -i http://localhost:8088/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"expression":"1+4+3-"}'
+```
+
+Division by zero:
+
+```sh
+curl -i http://localhost:8088/api/v1/calculate \
+  -H 'Content-Type: application/json' \
+  -d '{"expression":"1/0"}'
+```
+
+Frontend error handling is implemented in `src/api/calculator.ts`: API error messages are returned as `error`, invalid/non-finite results are mapped to an explanatory error, and network failures return `Unable to reach calculator service`.
+
+## Frontend design decisions and assumptions
+
+- React state in `useCalculator.ts` stores numbers and operators separately so keypad editing can preserve decimal and minus-sign input without parsing display text.
+- Live expressions are debounced for 150 ms, reducing API calls during rapid typing while keeping complete expressions on screen.
+- API results are treated as the source of truth for arithmetic. The frontend formats and displays those results but does not re-evaluate the expression locally.
+- A trailing operator is not sent; it is incomplete input and produces no preview request.
+- Pressing `=` hides the entered expression history and shows only the result. Backspace after evaluation clears the expression, as defined by the calculator interaction model.
+- Pressing a digit after evaluation starts a new calculation; pressing a decimal, operator, or percent continues from the result where applicable.
+- Plain CSS is used instead of a utility framework because the application uses a small set of custom component styles and themes.
+- Vite is used for development/build tooling, but Docker production runtime behavior is provided by Nginx rather than a Vite server.
+- The UI assumes localStorage is available for theme persistence. A restricted browser context could require a fallback implementation.
