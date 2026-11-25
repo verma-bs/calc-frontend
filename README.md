@@ -603,3 +603,6 @@ Frontend error handling is implemented in `src/api/calculator.ts`: API error mes
 - Plain CSS is used instead of a utility framework because the application uses a small set of custom component styles and themes.
 - Vite is used for development/build tooling, but Docker production runtime behavior is provided by Nginx rather than a Vite server.
 - The UI assumes localStorage is available for theme persistence. A restricted browser context could require a fallback implementation.
+
+## Test Coverage
+coverage-report.txt under root directory
